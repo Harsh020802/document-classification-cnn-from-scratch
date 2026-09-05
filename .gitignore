@@ -12,6 +12,8 @@ outputs/**
 # ...but DO publish the small result artifacts that document the run.
 !outputs/*.json
 !outputs/figures/*.png
+# clean_metrics.json is read by the figure code -- it must be committed
+!outputs/clean_metrics.json
 !outputs/runs/**/config.yaml
 !outputs/runs/**/metrics.csv
 !outputs/runs/**/results.json

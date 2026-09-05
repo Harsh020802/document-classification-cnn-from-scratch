@@ -1,0 +1,78 @@
+{
+  "n_test_total": 521,
+  "n_contaminated": 13,
+  "n_clean": 508,
+  "hamming_threshold": 3,
+  "raw": {
+    "acc": 0.8522072936660269,
+    "macro_f1": 0.8285638169351422
+  },
+  "clean": {
+    "acc": 0.8484251968503937,
+    "macro_f1": 0.8282060844090002,
+    "per_class": {
+      "ADVE": {
+        "precision": 0.9705882352941176,
+        "recall": 0.9705882352941176,
+        "f1": 0.9705882352941176,
+        "support": 34
+      },
+      "Email": {
+        "precision": 0.9506172839506173,
+        "recall": 1.0,
+        "f1": 0.9746835443037974,
+        "support": 77
+      },
+      "Form": {
+        "precision": 0.8260869565217391,
+        "recall": 0.890625,
+        "f1": 0.8571428571428571,
+        "support": 64
+      },
+      "Letter": {
+        "precision": 0.8974358974358975,
+        "recall": 0.8235294117647058,
+        "f1": 0.8588957055214724,
+        "support": 85
+      },
+      "Memo": {
+        "precision": 0.8315789473684211,
+        "recall": 0.8494623655913979,
+        "f1": 0.8404255319148937,
+        "support": 93
+      },
+      "News": {
+        "precision": 0.9259259259259259,
+        "recall": 0.8928571428571429,
+        "f1": 0.9090909090909091,
+        "support": 28
+      },
+      "Note": {
+        "precision": 0.8888888888888888,
+        "recall": 0.8,
+        "f1": 0.8421052631578947,
+        "support": 30
+      },
+      "Report": {
+        "precision": 0.7692307692307693,
+        "recall": 0.75,
+        "f1": 0.759493670886076,
+        "support": 40
+      },
+      "Resume": {
+        "precision": 0.5483870967741935,
+        "recall": 0.9444444444444444,
+        "f1": 0.6938775510204082,
+        "support": 18
+      },
+      "Scientific": {
+        "precision": 0.7037037037037037,
+        "recall": 0.48717948717948717,
+        "f1": 0.5757575757575758,
+        "support": 39
+      }
+    }
+  },
+  "contaminated_acc": 1.0,
+  "note": "Contaminated = a test image within Hamming <= 3 of a training image when both are hashed as the 256x256 CACHED tensors the model actually consumes. The dedup that produced the split hashed the ORIGINAL scans, which at ~9x downscaling is a different question (D-043)."
+}

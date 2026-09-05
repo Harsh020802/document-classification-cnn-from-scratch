@@ -27,6 +27,12 @@ reading roughly the same thing — coarse ink distribution by region. That is wh
 CNN's **+23.2 point** margin over the stronger baseline meaningful: it cannot be explained by
 having access to more pixels.
 
+![Baseline comparison](outputs/figures/fig5_baselines.png)
+
+The lower panel is the point: the step from a majority-class guess to a linear model on 8×8
+pixels is +40.88 accuracy points, the step from 8×8 to 32×32 is +2.88 despite sixteen times the
+features, and the step from there to the CNN is +23.23.
+
 A 2024 audit of this dataset ([arXiv:2412.13140](https://arxiv.org/abs/2412.13140)) found 11.7%
 of labels are wrong and 16.7% of documents carry more than one valid label, which puts a
 practical ceiling near 88%. Reviewing the thirty errors the model was most confident about, six
@@ -47,6 +53,8 @@ perceptual hashing groups near-duplicates so that no cluster straddles a split b
 split itself is stratified at 70/15/15, giving 2,438 training, 523 validation and 521 test
 images with every class within 0.2% of its target proportion.
 
+![Class distribution](outputs/figures/fig4_class_distribution.png)
+
 Preprocessing resizes the long side to 256, pads the short side to square with white, and caches
 the result as a 217.6 MB uint8 array. Training crops randomly to 224 and applies rotation, small
 affine jitter and brightness/contrast changes — every geometric transform with `fill=255` to
@@ -57,6 +65,11 @@ Training uses cross-entropy with inverse-frequency class weights, AdamW at 3e-4 
 decay 1e-4, cosine annealing, and batch size 32. Checkpoints are selected on validation
 macro-F1. The reported run stopped early at epoch 26 of 40 and took 16 minutes at 36.8 seconds
 per epoch on an M2 MacBook Air with 8 GB of memory.
+
+![Training curves](outputs/figures/fig1_training_curves.png)
+
+Validation loss is noticeably noisier than training loss, which is expected on a 523-image
+validation split — a handful of images changing prediction moves the metric visibly.
 
 ## Architecture
 
@@ -88,6 +101,24 @@ on the page, and page layout carries much of the signal for this task. The theor
 field after the fourth block is 76 pixels, 33.9% of the input, so a late-layer unit sees a patch
 rather than a page — global layout enters the model through the pooling grid, not through the
 receptive field.
+
+## Where the errors are
+
+![Confusion matrix](outputs/figures/fig2_confusion_matrix.png)
+
+Email is essentially solved at 90/90 recall. The interesting row is Scientific, whose 19
+correct predictions out of 39 are matched by errors **spread across nine other classes** — five
+to Form, five to Memo, four to Report, and single instances almost everywhere else. That
+dispersion is itself evidence: a class confused with one or two neighbours usually shares a
+visual template with them, whereas a class confused with everything has no visual signature of
+its own to be confused about.
+
+![Per-class performance](outputs/figures/fig3_per_class.png)
+
+Resume is the clearest illustration of what the class weighting does. Its recall is 0.944
+against a precision of 0.548 — the model finds nearly every resume and pays for it by labelling
+other documents as resumes. With 18 test examples of the rarest class, that is the trade the
+inverse-frequency weighting was chosen to make.
 
 ## What the R&D found
 
@@ -210,6 +241,9 @@ configs/        default.yaml and the pre-registered ablation.yaml
 notes/          the design record
 outputs/        figures, metrics and per-run results (checkpoints are not committed)
 ```
+
+All five figures regenerate from files on disk with `./run.sh scripts/make_figures.py` — no
+number is hand-typed into the plotting code, so they rebuild correctly after any new run.
 
 `notes/` is the part of this repository I would point at first. `DECISIONS.md` is an
 append-only log of every non-obvious choice with its reasoning and arithmetic, including the

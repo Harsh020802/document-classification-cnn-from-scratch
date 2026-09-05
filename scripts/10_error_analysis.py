@@ -115,11 +115,11 @@ def main() -> None:
     print(f"\nTEST  acc {res['test_acc']:.4f}   macro-F1 {res['test_macro_f1']:.4f}")
 
     figs = REPO / "outputs" / "figures"
-    plot_confusion(cm, figs / "04_confusion_matrix.png",
+    plot_confusion(cm, figs / "diag_confusion_matrix.png",
                    f"{res['head']} seed {res['seed']} -- test acc {res['test_acc']:.3f}, "
                    f"macro-F1 {res['test_macro_f1']:.3f}")
     recs = plot_confident_errors(cache, test_idx, y_true, y_pred, probs,
-                                 figs / "05_confident_errors.png")
+                                 figs / "diag_confident_errors.png")
 
     # Which pairs get confused most, off-diagonal.
     print("\n  most-confused class PAIRS (off-diagonal, both directions):")

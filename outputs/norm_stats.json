@@ -1,0 +1,11 @@
+{
+  "mean": 0.9350775508212587,
+  "std": 0.17255424357780755,
+  "mean_with_padding": 0.9502390347758292,
+  "std_with_padding": 0.15354479082724937,
+  "computed_on": "train",
+  "n_train": 2438,
+  "exclude_padding": true,
+  "cache_size": 256,
+  "padding_fraction": 0.23424711013785182
+}

@@ -1,0 +1,101 @@
+{
+  "confident_errors": [
+    {
+      "test_pos": 504,
+      "dataset_idx": 3355,
+      "pred": "Form",
+      "true": "Scientific",
+      "p_pred": 0.9902058243751526,
+      "p_true": 0.006759693380445242
+    },
+    {
+      "test_pos": 138,
+      "dataset_idx": 968,
+      "pred": "Memo",
+      "true": "Form",
+      "p_pred": 0.9868164658546448,
+      "p_true": 0.010458683595061302
+    },
+    {
+      "test_pos": 498,
+      "dataset_idx": 3318,
+      "pred": "Memo",
+      "true": "Scientific",
+      "p_pred": 0.9853796362876892,
+      "p_true": 0.0010580160887911916
+    },
+    {
+      "test_pos": 495,
+      "dataset_idx": 3303,
+      "pred": "Form",
+      "true": "Scientific",
+      "p_pred": 0.968481183052063,
+      "p_true": 0.019571149721741676
+    },
+    {
+      "test_pos": 503,
+      "dataset_idx": 3349,
+      "pred": "ADVE",
+      "true": "Scientific",
+      "p_pred": 0.965801477432251,
+      "p_true": 0.000568340125028044
+    },
+    {
+      "test_pos": 457,
+      "dataset_idx": 3033,
+      "pred": "Form",
+      "true": "Report",
+      "p_pred": 0.9446311593055725,
+      "p_true": 0.033243823796510696
+    },
+    {
+      "test_pos": 406,
+      "dataset_idx": 2712,
+      "pred": "Memo",
+      "true": "Note",
+      "p_pred": 0.9169683456420898,
+      "p_true": 0.0015950665110722184
+    },
+    {
+      "test_pos": 433,
+      "dataset_idx": 2908,
+      "pred": "Letter",
+      "true": "Report",
+      "p_pred": 0.9098180532455444,
+      "p_true": 0.00415866868570447
+    },
+    {
+      "test_pos": 491,
+      "dataset_idx": 3282,
+      "pred": "Note",
+      "true": "Scientific",
+      "p_pred": 0.8598201274871826,
+      "p_true": 0.013185692019760609
+    },
+    {
+      "test_pos": 505,
+      "dataset_idx": 3364,
+      "pred": "Report",
+      "true": "Scientific",
+      "p_pred": 0.8381660580635071,
+      "p_true": 0.10603408515453339
+    },
+    {
+      "test_pos": 396,
+      "dataset_idx": 2666,
+      "pred": "Form",
+      "true": "Note",
+      "p_pred": 0.837887704372406,
+      "p_true": 0.15975482761859894
+    },
+    {
+      "test_pos": 230,
+      "dataset_idx": 1512,
+      "pred": "Memo",
+      "true": "Letter",
+      "p_pred": 0.8279966711997986,
+      "p_true": 0.11643286049365997
+    }
+  ],
+  "size_f1_corr": 0.36229010684284924
+}

@@ -1,0 +1,46 @@
+# --- Data & outputs (regenerable, large) -------------------------------------
+# Ignore the CONTENTS but keep the directory skeleton via .gitkeep files.
+# NOTE: `!data/` would re-include everything underneath and defeat the rule above,
+# which is exactly the bug this replaced. Un-ignore only the .gitkeep files.
+data/**
+!data/**/
+!data/**/.gitkeep
+
+outputs/**
+!outputs/**/
+!outputs/**/.gitkeep
+# ...but DO publish the small result artifacts that document the run.
+!outputs/*.json
+!outputs/figures/*.png
+!outputs/runs/**/config.yaml
+!outputs/runs/**/metrics.csv
+!outputs/runs/**/results.json
+!outputs/runs/**/*_analysis.json
+!outputs/runs/**/*_triage.json
+
+# --- Private working notes (review thread; the design record in notes/ stays) -
+notes/reply-*.md
+
+# --- Exported / dropped images -----------------------------------------------
+samples/
+inbox/*
+!inbox/README.txt
+
+# --- Reference repos (kept locally through Week 2, not committed) ------------
+reference/
+
+# --- Python ------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.ipynb_checkpoints/
+
+# --- Model artefacts (14 MB each; regenerate by training) --------------------
+*.pt
+*.pth
+*.npy
+
+# --- OS / editor -------------------------------------------------------------
+.DS_Store
+.vscode/
+.idea/

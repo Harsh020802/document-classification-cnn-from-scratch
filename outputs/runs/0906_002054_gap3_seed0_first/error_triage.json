@@ -1,0 +1,341 @@
+{
+  "counts": {
+    "L": 6,
+    "A": 13,
+    "M": 11
+  },
+  "n_reviewed": 30,
+  "total_errors": 77,
+  "items": [
+    {
+      "rank": 1,
+      "test_pos": 504,
+      "ds_idx": 3355,
+      "pred": "Form",
+      "true": "Scientific",
+      "p_pred": 0.9902058243751526,
+      "p_true": 0.006759693380445242,
+      "verdict": "A",
+      "note": "CONFIDENTIAL Philip Morris research letter -- research content on a letter/report layout; Scientific vs Form both arguable"
+    },
+    {
+      "rank": 2,
+      "test_pos": 138,
+      "ds_idx": 968,
+      "pred": "Memo",
+      "true": "Form",
+      "p_pred": 0.9868164658546448,
+      "p_true": 0.010458683595061302,
+      "verdict": "L",
+      "note": "\"PHILIP MORRIS MANAG / FACSIMILE TRANSM\" with DATE/TO/FROM/RE header -- a memo/fax, labelled Form"
+    },
+    {
+      "rank": 3,
+      "test_pos": 498,
+      "ds_idx": 3318,
+      "pred": "Memo",
+      "true": "Scientific",
+      "p_pred": 0.9853796362876892,
+      "p_true": 0.0010580160887911916,
+      "verdict": "A",
+      "note": "Numeric DATA SUMMARY table -- Form (tabular layout) vs Scientific (content) both defensible"
+    },
+    {
+      "rank": 4,
+      "test_pos": 495,
+      "ds_idx": 3303,
+      "pred": "Form",
+      "true": "Scientific",
+      "p_pred": 0.968481183052063,
+      "p_true": 0.019571149721741676,
+      "verdict": "A",
+      "note": "CRC cover sheet with a \"Report\" field and study title -- Form vs Scientific both arguable"
+    },
+    {
+      "rank": 5,
+      "test_pos": 503,
+      "ds_idx": 3349,
+      "pred": "ADVE",
+      "true": "Scientific",
+      "p_pred": 0.965801477432251,
+      "p_true": 0.000568340125028044,
+      "verdict": "L",
+      "note": "\"WORKPLACE SMOKING BANS\" poster with no-smoking symbol -- an advertisement/poster, labelled Scientific"
+    },
+    {
+      "rank": 6,
+      "test_pos": 457,
+      "ds_idx": 3033,
+      "pred": "Form",
+      "true": "Report",
+      "p_pred": 0.9446311593055725,
+      "p_true": 0.033243823796510696,
+      "verdict": "L",
+      "note": "R.J. Reynolds PROMOTION INFORMATION SHEET, tabular -- a form, labelled Report"
+    },
+    {
+      "rank": 7,
+      "test_pos": 406,
+      "ds_idx": 2712,
+      "pred": "Memo",
+      "true": "Note",
+      "p_pred": 0.9169683456420898,
+      "p_true": 0.0015950665110722184,
+      "verdict": "A",
+      "note": "German-language institute letter, prose body -- Memo vs Note both arguable"
+    },
+    {
+      "rank": 8,
+      "test_pos": 433,
+      "ds_idx": 2908,
+      "pred": "Letter",
+      "true": "Report",
+      "p_pred": 0.9098180532455444,
+      "p_true": 0.00415866868570447,
+      "verdict": "L",
+      "note": "Headed \"Inter-office Memorandum\" with To/From/Subject/Date -- a memo, labelled Report"
+    },
+    {
+      "rank": 9,
+      "test_pos": 491,
+      "ds_idx": 3282,
+      "pred": "Note",
+      "true": "Scientific",
+      "p_pred": 0.8598201274871826,
+      "p_true": 0.013185692019760609,
+      "verdict": "M",
+      "note": "Handwritten lab notes -- genuinely Scientific; model said Note on the handwriting"
+    },
+    {
+      "rank": 10,
+      "test_pos": 505,
+      "ds_idx": 3364,
+      "pred": "Report",
+      "true": "Scientific",
+      "p_pred": 0.8381660580635071,
+      "p_true": 0.10603408515453339,
+      "verdict": "A",
+      "note": "Research proposal with Principal Investigator / Title / Critique -- Report vs Scientific overlap"
+    },
+    {
+      "rank": 11,
+      "test_pos": 396,
+      "ds_idx": 2666,
+      "pred": "Form",
+      "true": "Note",
+      "p_pred": 0.837887704372406,
+      "p_true": 0.15975482761859894,
+      "verdict": "M",
+      "note": "Handwritten notes -- Note is correct; model said Form"
+    },
+    {
+      "rank": 12,
+      "test_pos": 230,
+      "ds_idx": 1512,
+      "pred": "Memo",
+      "true": "Letter",
+      "p_pred": 0.8279966711997986,
+      "p_true": 0.11643286049365997,
+      "verdict": "L",
+      "note": "Headed \"INTEROFFICE MEMORANDUM\" with TO/FROM/DATE/SUBJECT -- a memo, labelled Letter"
+    },
+    {
+      "rank": 13,
+      "test_pos": 274,
+      "ds_idx": 1843,
+      "pred": "Resume",
+      "true": "Memo",
+      "p_pred": 0.8008198738098145,
+      "p_true": 0.07939806580543518,
+      "verdict": "M",
+      "note": "Memo layout with heavy handwritten annotation; model said Resume"
+    },
+    {
+      "rank": 14,
+      "test_pos": 338,
+      "ds_idx": 2308,
+      "pred": "Form",
+      "true": "Memo",
+      "p_pred": 0.7886567711830139,
+      "p_true": 0.03134726732969284,
+      "verdict": "A",
+      "note": "Distribution list + boxed NOTE -- Memo vs Form both arguable"
+    },
+    {
+      "rank": 15,
+      "test_pos": 333,
+      "ds_idx": 2278,
+      "pred": "Email",
+      "true": "Memo",
+      "p_pred": 0.7809271812438965,
+      "p_true": 0.18488982319831848,
+      "verdict": "M",
+      "note": "Headed \"MEMORANDUM\" with TO/FROM/SUBJECT -- model said Email on the short header; label Memo is right, model wrong"
+    },
+    {
+      "rank": 16,
+      "test_pos": 14,
+      "ds_idx": 103,
+      "pred": "Form",
+      "true": "ADVE",
+      "p_pred": 0.7789939641952515,
+      "p_true": 0.01539802085608244,
+      "verdict": "M",
+      "note": "CAMEL PAGE advertisement -- ADVE correct; model said Form on the boxed layout"
+    },
+    {
+      "rank": 17,
+      "test_pos": 394,
+      "ds_idx": 2639,
+      "pred": "Scientific",
+      "true": "Note",
+      "p_pred": 0.7696245312690735,
+      "p_true": 0.00504649244248867,
+      "verdict": "L",
+      "note": "\"MEMORANDUM TO: Committee of Counsel\" -- a memo, labelled Note"
+    },
+    {
+      "rank": 18,
+      "test_pos": 508,
+      "ds_idx": 3380,
+      "pred": "Report",
+      "true": "Scientific",
+      "p_pred": 0.7693336606025696,
+      "p_true": 0.007942474447190762,
+      "verdict": "A",
+      "note": "INTERIM REPORT NO.4 from a laboratory -- Report vs Scientific overlap"
+    },
+    {
+      "rank": 19,
+      "test_pos": 181,
+      "ds_idx": 1210,
+      "pred": "Scientific",
+      "true": "Form",
+      "p_pred": 0.6953751444816589,
+      "p_true": 0.10137903690338135,
+      "verdict": "A",
+      "note": "Dense tabular data sheet -- Form vs Scientific both defensible"
+    },
+    {
+      "rank": 20,
+      "test_pos": 465,
+      "ds_idx": 3107,
+      "pred": "Memo",
+      "true": "Resume",
+      "p_pred": 0.6759727597236633,
+      "p_true": 0.017617618665099144,
+      "verdict": "M",
+      "note": "Redacted CV/biography with dated career entries -- Resume correct; model said Memo"
+    },
+    {
+      "rank": 21,
+      "test_pos": 514,
+      "ds_idx": 3437,
+      "pred": "Report",
+      "true": "Scientific",
+      "p_pred": 0.6655077934265137,
+      "p_true": 0.15034914016723633,
+      "verdict": "M",
+      "note": "Journal article: title, authors, affiliations, Summary/Introduction, two-column -- Scientific, labelled... model said Report; the label IS Scientific so model error"
+    },
+    {
+      "rank": 22,
+      "test_pos": 461,
+      "ds_idx": 3068,
+      "pred": "Resume",
+      "true": "Report",
+      "p_pred": 0.6639365553855896,
+      "p_true": 0.1637776792049408,
+      "verdict": "A",
+      "note": "1988 State Report on tobacco legislation, state-by-state -- Report vs Resume(list) confusion; label Report defensible"
+    },
+    {
+      "rank": 23,
+      "test_pos": 361,
+      "ds_idx": 2432,
+      "pred": "Resume",
+      "true": "Memo",
+      "p_pred": 0.6541703343391418,
+      "p_true": 0.07853129506111145,
+      "verdict": "M",
+      "note": "MEMORANDUM with TO/FROM/SUBJECT -- Memo correct; model said Resume"
+    },
+    {
+      "rank": 24,
+      "test_pos": 220,
+      "ds_idx": 1480,
+      "pred": "Report",
+      "true": "Letter",
+      "p_pred": 0.6500827074050903,
+      "p_true": 0.33254897594451904,
+      "verdict": "A",
+      "note": "TOBACCO PROJECTS study summaries under a letter head -- Letter vs Report both arguable"
+    },
+    {
+      "rank": 25,
+      "test_pos": 434,
+      "ds_idx": 2910,
+      "pred": "Form",
+      "true": "Report",
+      "p_pred": 0.6486085653305054,
+      "p_true": 0.07195011526346207,
+      "verdict": "A",
+      "note": "German report with handwritten annotations and a data table -- Report vs Form arguable"
+    },
+    {
+      "rank": 26,
+      "test_pos": 264,
+      "ds_idx": 1757,
+      "pred": "Note",
+      "true": "Letter",
+      "p_pred": 0.6482370495796204,
+      "p_true": 0.05446263402700424,
+      "verdict": "M",
+      "note": "Personal letter, \"Dear Art ... Sincerely\" -- Letter correct; model said Note"
+    },
+    {
+      "rank": 27,
+      "test_pos": 519,
+      "ds_idx": 3465,
+      "pred": "Memo",
+      "true": "Scientific",
+      "p_pred": 0.6457318067550659,
+      "p_true": 0.23700572550296783,
+      "verdict": "M",
+      "note": "Journal-style abstract, \"REPLY DETERMINATION OF...\" with Abstract section -- Scientific; model said Memo. Label IS Scientific -> model error"
+    },
+    {
+      "rank": 28,
+      "test_pos": 183,
+      "ds_idx": 1234,
+      "pred": "Memo",
+      "true": "Form",
+      "p_pred": 0.6317596435546875,
+      "p_true": 0.06059256196022034,
+      "verdict": "A",
+      "note": "Cigarette sample specification sheet, tabular -- Form vs Memo arguable"
+    },
+    {
+      "rank": 29,
+      "test_pos": 489,
+      "ds_idx": 3279,
+      "pred": "Memo",
+      "true": "Scientific",
+      "p_pred": 0.6200687289237976,
+      "p_true": 0.2856391668319702,
+      "verdict": "A",
+      "note": "PROJECT summary report with sections -- Scientific vs Memo arguable"
+    },
+    {
+      "rank": 30,
+      "test_pos": 518,
+      "ds_idx": 3459,
+      "pred": "Email",
+      "true": "Scientific",
+      "p_pred": 0.6199504733085632,
+      "p_true": 0.12002989649772644,
+      "verdict": "M",
+      "note": "Dense technical data listing -- Scientific label plausible; model said Email"
+    }
+  ]
+}

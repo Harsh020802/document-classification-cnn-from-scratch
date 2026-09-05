@@ -1,0 +1,120 @@
+# Document Image Classifier -- default configuration
+# Every number here traces to a decision recorded in notes/. Where a value is
+# non-obvious, the comment says why.
+
+name: docclf
+
+# --- Reproducibility ----------------------------------------------------------
+seed: 0
+deterministic: true    # inert on MPS -- see src/utils/seed.py docstring
+
+# --- Data ---------------------------------------------------------------------
+data:
+  source: maveriq/tobacco3482   # HuggingFace; no auth needed, unlike Kaggle
+  raw_dir: data/raw
+  cache_dir: data/cache
+  splits_dir: data/splits
+  num_classes: 10
+
+  # Cache at 256, augment+crop to 224 at load time. Caching at 224 would mean
+  # rotation/scale resample already-downscaled pixels (double resampling).
+  cache_size: 256               # long side -> 256, white-pad to 256x256
+  input_size: 224               # random crop (train) / center crop (eval)
+  grayscale: true               # scans carry no colour signal; 3x less memory
+
+  # Padding value, used by BOTH the pad and every geometric transform's `fill`.
+  # A single constant because two copies of this number WILL drift, and a
+  # fill=0 default would paint black wedges onto white padding -- random noise
+  # on 4 of the 9 gap3 spatial cells.
+  pad_value: 255
+
+  # Stratified: a random split could hand us ~4 resumes in val (120 total).
+  split: {train: 0.70, val: 0.15, test: 0.15}
+
+  # Near-duplicate detection, run BEFORE splitting. Exact file hashing catches
+  # nothing in a scanned corpus (same doc, different noise -> different bytes).
+  dedup:
+    enabled: true
+    method: phash
+    hamming_threshold: 3        # NOT 5 -- see D-030. At 4+ the clustering chains
+                                # through sparse near-blank emails: largest cluster
+                                # jumps 25 -> 121 -> 278 -> 415 as thr goes 3/4/6/8.
+    cluster: union_find         # near-duplicate relations are not transitive
+
+  # Normalization stats computed from the TRAIN split over CONTENT pixels only
+  # (padding excluded via the cache-time validity mask). Including padding would
+  # skew the mean toward white by a per-image-varying amount and deflate the
+  # apparent variance of real content. NOT ImageNet constants -- no pretrained
+  # weights here, and document scans look nothing like natural photographs.
+  normalize:
+    compute_from: train
+    exclude_padding: true
+    stats_file: outputs/norm_stats.json
+
+  loader:
+    batch_size: 32
+    num_workers: 0              # to be verified: Phase 1.2 times {0, 2}
+    pin_memory: false           # no effect on MPS unified memory
+
+# --- Augmentation (train only) ------------------------------------------------
+# NO horizontal flip: mirrored text is not a document. Standard for CIFAR,
+# actively wrong here.
+augment:
+  random_crop: true             # free translation jitter from the 256->224 crop
+  rotation_degrees: 5
+  translate: 0.02
+  scale: [0.95, 1.05]
+  brightness: 0.15
+  contrast: 0.15
+  # fill for all of the above comes from data.pad_value (255)
+
+# --- Model --------------------------------------------------------------------
+model:
+  type: DocCNN
+  in_channels: 1
+  # Each entry is one block: [Conv3x3 -> BN -> ReLU] x2 -> MaxPool(2).
+  # Depth is a config value so Week 2 can try 5 blocks without a code change.
+  block_channels: [32, 64, 128, 256]
+  dropout: 0.5
+
+  # The ablation variable. One key controls all four arms so nothing can drift.
+  #   gap1        : AdaptiveAvgPool2d(1) -> Linear(256 -> 10)          2,570 params
+  #   gap1_hidden : AdaptiveAvgPool2d(1) -> Linear(256->86) -> ReLU
+  #                                      -> Linear(86 -> 10)          22,972 params
+  #   gap3        : replicate-pad 14->15, AvgPool2d(k=5,s=5)
+  #                                      -> Linear(2304 -> 10)        23,050 params
+  #                 NB: NOT AdaptiveAvgPool2d(3) -- that op raises on MPS because
+  #                 the 14x14 map is not divisible by 3, and PYTORCH_ENABLE_MPS_
+  #                 FALLBACK=1 does NOT help (the op is implemented, it just
+  #                 rejects the input). Padding to 15 sidesteps the restriction:
+  #                 uniform cells [0-4][5-9][10-14], FULL coverage, no double-
+  #                 counting, corr 0.9993 vs the intended op on real activations.
+  #                 Costs +0.011 s/epoch. See D-024/D-025/D-026.
+  #   gap7        : AdaptiveAvgPool2d(7) -> Linear(12544 -> 10)      125,450 params
+  # h=86 (not 88) matches gap3 to within 0.3%; exact solution is h=86.29.
+  head:
+    type: gap3
+    hidden_dim: 86              # only used by gap1_hidden
+
+# --- Loss / optimizer ---------------------------------------------------------
+loss:
+  type: cross_entropy           # on RAW LOGITS -- the model does not softmax
+  class_weights: inverse_freq   # 5.2x imbalance (Memo 619 vs Resume 120)
+
+optimizer:
+  type: adamw
+  lr: 3.0e-4
+  weight_decay: 1.0e-4
+
+lr_scheduler:
+  type: cosine_annealing
+  t_max: 40
+
+# --- Training -----------------------------------------------------------------
+trainer:
+  epochs: 40
+  monitor: max val_macro_f1     # NOT accuracy: macro-F1 exposes ignored Resume
+  early_stop: 10
+  save_dir: outputs
+  save_best_only: true          # ~14.4 MB/ckpt (weights + AdamW moments)
+  log_csv: true                 # CSV + matplotlib, not TensorBoard

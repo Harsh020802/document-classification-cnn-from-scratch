@@ -1,0 +1,119 @@
+# Ablation: does spatial position in the pooled head carry class signal,
+# independent of head capacity?
+#
+# PRE-REGISTERED. This file is committed BEFORE any training run. Git timestamps
+# make the hypothesis auditable as predating the data.
+
+inherits: default.yaml
+
+# --- The four arms ------------------------------------------------------------
+# Arms B and C are matched on head parameters (22,972 vs 23,050 -- 0.3% apart)
+# and differ ONLY in whether spatial position survives to the classifier.
+# A and D provide context: the capacity floor, and whether more spatial
+# resolution keeps helping or tips into overfitting.
+#
+# Caveat recorded up front: arm B has an extra ReLU that C lacks. Matched on
+# parameters, not depth -- unavoidable, since you cannot add capacity to a
+# 256-vector without adding a layer. This gives B a slight representational
+# edge, so a B~C tie strengthens the capacity explanation, and a C win holds
+# despite the handicap.
+arms:
+  - {id: A, head: {type: gap1},                     spatial: none, head_params: 2570}
+  - {id: B, head: {type: gap1_hidden, hidden_dim: 86}, spatial: none, head_params: 22972}
+  # Arm C: replicate-pad 14->15 then AvgPool2d(k=5,s=5). NOT AdaptiveAvgPool2d(3)
+  # -- that raises on MPS (14 not divisible by 3) and the MPS fallback env var
+  # does not help. Full coverage, no double-counting, corr 0.9993 on real
+  # activations, params identical at 23,050 so the B-vs-C capacity match holds.
+  # An earlier workaround (k=5,s=4) was rejected: it dropped row/col 13, i.e. the
+  # bottom edge where signatures and footers sit -- a confound in the PRIMARY
+  # comparison. See D-024/D-025/D-026.
+  - {id: C, head: {type: gap3},                     spatial: 3x3,  head_params: 23050}
+  - {id: D, head: {type: gap7},                     spatial: 7x7,  head_params: 125450}
+
+# --- Step 1: determinism check ------------------------------------------------
+# Diagnostic ONLY. Answers "is MPS bit-reproducible for our ops", which is NOT
+# the noise floor for reading the ablation table.
+determinism_check:
+  enabled: true
+  arm: C
+  epochs: 3
+  repeats: 2
+
+# --- Step 2: seed-variance floor ----------------------------------------------
+# THIS is the floor every arm difference is read against. Run on gap3 (an arm in
+# the primary comparison) rather than a cheap proxy -- the backbone dominates
+# cost, so the ~20k head difference is under 2% of the model.
+#
+# Report the observed RANGE, not a standard deviation: an SD from n=3 implies a
+# precision that does not exist.
+seed_floor:
+  enabled: true
+  arm: C
+  seeds: [0, 1, 2]
+  report: range                 # min / max / range + raw per-seed numbers
+  # No automatic threshold. The range and my read are reported; whether to
+  # proceed is a judgment call for the user, not a computed gate.
+  discuss_if_range_exceeds: 3.0
+
+# --- Step 4-6: the comparison -------------------------------------------------
+evaluation:
+  split: test                   # SEALED. Never val -- val selects the checkpoint,
+                                # so scoring on it is optimistically biased, and
+                                # biased differently per arm.
+  n_test: 522
+  seed: 0
+
+# --- PRE-REGISTERED PRIMARY HYPOTHESIS ----------------------------------------
+primary_comparison:
+  arms: [C, B]                  # gap3  vs  gap1_hidden(86)
+  test: mcnemar
+  variant: exact_binomial
+  sided: two
+  alpha: 0.05                   # UNADJUSTED -- sits outside the Holm family
+  hypothesis: >
+    The trained gap3 model at seed 0 achieves higher test accuracy than the
+    trained gap1_hidden(86) model at seed 0.
+  scope: >
+    A claim about these two FITTED MODELS, not about the architectures. McNemar
+    conditions on two specific trained models and treats the test images as the
+    random variable; it says nothing about training variability, because there is
+    one training run per arm (Dietterich 1998).
+  architectural_claim_requires: >
+    Generalization to an architectural claim is supported ONLY if the McNemar
+    effect exceeds the measured seed-variance floor. If the seed range is 2
+    points and the C-vs-B difference is 1.5 points, the p-value may be
+    significant while the architectural claim is NOT supported. Report both, and
+    state which claim the evidence licenses.
+
+# --- Secondary (exploratory) --------------------------------------------------
+# 5 remaining pairs. Six pairs at alpha=.05 would give a 26.5% chance of at
+# least one false positive, so the exploratory family is Holm-corrected.
+# Holm > Bonferroni: uniformly more powerful at the same FWER, and it assumes no
+# independence -- which matters, since these tests share arms.
+secondary_comparisons:
+  pairs: [[A, B], [A, C], [A, D], [B, D], [C, D]]
+  correction: holm
+  family_alpha: 0.05
+  ladder: [0.0100, 0.0125, 0.0167, 0.0250, 0.0500]
+  label: exploratory
+
+# --- Power (computed, for the writeup) ----------------------------------------
+# All thresholds at k = 2.80 (= 1.96 + 0.84, 80% power at alpha=.05 two-sided).
+# One consistent k throughout the report.
+power_analysis:
+  k: 2.80
+  test_set_sampling_se_pct: 1.90      # IRREDUCIBLE by more seeds -- the same 522
+                                      # images are evaluated by every seed
+  unpaired_detectable_pts: 7.5
+  paired_detectable_pts_by_discordance:
+    30: 2.9
+    50: 3.8
+    80: 4.8
+    120: 5.9
+  note: >
+    Pairing improves resolution ~1.5-2x (7.5 -> 3.4-4.8 pts at expected
+    discordance), not 2.5x. The effect being chased is plausibly 2-3 points, so
+    the experiment is likely still underpowered -- just less so. Counterintuitively,
+    MORE discordant pairs means a LARGER detectable difference, since SE grows as
+    sqrt(n_discordant) while the 522 denominator is fixed.
+  inconclusive_is_valid: true

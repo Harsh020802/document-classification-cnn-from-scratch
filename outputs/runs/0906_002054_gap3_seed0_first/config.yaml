@@ -1,0 +1,68 @@
+name: docclf
+seed: 0
+deterministic: true
+data:
+  source: maveriq/tobacco3482
+  raw_dir: data/raw
+  cache_dir: data/cache
+  splits_dir: data/splits
+  num_classes: 10
+  cache_size: 256
+  input_size: 224
+  grayscale: true
+  pad_value: 255
+  split:
+    train: 0.7
+    val: 0.15
+    test: 0.15
+  dedup:
+    enabled: true
+    method: phash
+    hamming_threshold: 3
+    cluster: union_find
+  normalize:
+    compute_from: train
+    exclude_padding: true
+    stats_file: outputs/norm_stats.json
+  loader:
+    batch_size: 32
+    num_workers: 0
+    pin_memory: false
+augment:
+  random_crop: true
+  rotation_degrees: 5
+  translate: 0.02
+  scale:
+  - 0.95
+  - 1.05
+  brightness: 0.15
+  contrast: 0.15
+model:
+  type: DocCNN
+  in_channels: 1
+  block_channels:
+  - 32
+  - 64
+  - 128
+  - 256
+  dropout: 0.5
+  head:
+    type: gap3
+    hidden_dim: 86
+loss:
+  type: cross_entropy
+  class_weights: inverse_freq
+optimizer:
+  type: adamw
+  lr: 0.0003
+  weight_decay: 0.0001
+lr_scheduler:
+  type: cosine_annealing
+  t_max: 40
+trainer:
+  epochs: 40
+  monitor: max val_macro_f1
+  early_stop: 10
+  save_dir: outputs
+  save_best_only: true
+  log_csv: true

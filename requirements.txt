@@ -1,0 +1,29 @@
+# Document Image Classifier -- exact versions of the environment that produced the
+# results in notes/RESULTS.md. Python 3.11.16, conda env `docclf`, macOS 26.2 / arm64.
+#
+# Constraint: the CNN is written from scratch. torchvision is used ONLY for
+# transforms and DataLoader -- never torchvision.models, never pretrained weights.
+
+# --- Core ---------------------------------------------------------------------
+torch==2.8.0                # MPS on Apple Silicon; identical code runs on CUDA
+torchvision==0.23.0         # transforms + DataLoader utilities ONLY
+
+# --- Numerics / data ----------------------------------------------------------
+numpy==2.4.6
+pandas==2.3.3
+pillow==11.3.0
+
+# --- Metrics and the two logistic-regression baselines ------------------------
+scikit-learn==1.9.0
+scipy==1.17.1               # McNemar exact test in scripts/12_ablation.py
+
+# --- Dataset access -----------------------------------------------------------
+datasets==3.6.0             # HuggingFace: maveriq/tobacco3482
+
+# --- Near-duplicate detection (data hygiene, pre-split leakage check) ---------
+imagehash==4.3.2
+
+# --- Plotting / progress / config ---------------------------------------------
+matplotlib==3.11.1
+tqdm==4.70.0
+pyyaml==6.0.3

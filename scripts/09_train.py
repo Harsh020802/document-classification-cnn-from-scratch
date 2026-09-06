@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import os
 import sys
 import time
 from datetime import datetime
@@ -106,9 +107,26 @@ def main() -> None:
 
     mode, metric = cfg["trainer"]["monitor"].split()
     best = -float("inf") if mode == "max" else float("inf")
+    best_epoch = 0
     patience = cfg["trainer"]["early_stop"]
     stale = 0
     arch = {"type": "DocCNN", **cfg["model"]}
+
+    # --- live progress files, flushed every epoch (reply-15 Part 1) --------------
+    prog_path = run_dir / "progress.jsonl"
+    status_path = run_dir / "status.json"
+    t_wall = time.time()
+
+    def write_status(state, epoch, best_ep):
+        status_path.write_text(json.dumps({
+            "arm": cfg["model"]["head"]["type"], "seed": cfg["seed"],
+            "epoch": epoch, "total_epochs": cfg["trainer"]["epochs"],
+            "best_val_macro_f1": None if best == -float("inf") else best,
+            "best_epoch": best_ep, "start_time": t_wall, "updated": time.time(),
+            "state": state, "run_dir": run_dir.name,
+        }, indent=2))
+
+    write_status("running", 0, 0)
 
     csv_path = run_dir / "metrics.csv"
     fields = ["epoch", "lr", "train_loss", "train_acc", "train_macro_f1",
@@ -146,12 +164,23 @@ def main() -> None:
 
         score = va[metric.replace("val_", "")]
         improved = score > best if mode == "max" else score < best
+
+        with prog_path.open("a") as pf:
+            pf.write(json.dumps({
+                "epoch": epoch, "train_loss": tr["loss"], "val_loss": va["loss"],
+                "val_macro_f1": va["macro_f1"], "epoch_sec": dt,
+                "new_best": improved,
+            }) + "\n")
+            pf.flush()
+            os.fsync(pf.fileno())
+
         if improved:
             best, stale = score, 0
             save_checkpoint(run_dir / "best.pt", model=model, optimizer=optimizer,
                             scheduler=scheduler, epoch=epoch, monitor_best=best,
                             config=cfg, arch=arch)
             print("  * best")
+            best_epoch = epoch
         else:
             stale += 1
             print()
@@ -159,6 +188,9 @@ def main() -> None:
                 print(f"\nearly stop: no improvement in {patience} epochs")
                 break
 
+        write_status("running", epoch, best_epoch)
+
+    write_status("done", epoch, best_epoch)
     save_checkpoint(run_dir / "last.pt", model=model, optimizer=optimizer,
                     scheduler=scheduler, epoch=epoch, monitor_best=best,
                     config=cfg, arch=arch)
@@ -200,4 +232,17 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception:
+        # Mark any still-"running" status as failed so watch.py shows it clearly
+        # instead of a stale row that never advances.
+        import traceback
+        for _s in sorted((REPO / "outputs" / "runs").glob("*/status.json")):
+            _d = json.loads(_s.read_text())
+            if _d.get("state") == "running":
+                _d["state"] = "failed"
+                _d["updated"] = time.time()
+                _s.write_text(json.dumps(_d, indent=2))
+        traceback.print_exc()
+        raise

@@ -291,6 +291,105 @@ refuted half of my own reasoning — which is the argument for measuring.
 
 ---
 
+## D-048 — PRE-COMMITMENT: one seed per arm. Seeds will NOT be added afterward.
+**Date:** 2026-09-06 · **Phase:** 2 (ablation) · **Status:** `settled` — **committed BEFORE the arm runs**
+
+**Decision:** the four ablation arms run at **seed 0 only**. Regardless of what the results
+show, additional seeds will not be added.
+
+**Why this is committed blind.** If we run four arms, see gap3 edge ahead, and *then* decide to
+add seeds, the design has been conditioned on the data and the pre-registration stops meaning
+anything. The decision has to be made while it is still uninformed. This entry is committed to
+git before the runs start; the timestamp is the evidence.
+
+**Why more seeds would not rescue the comparison — arithmetic, verified.**
+From the measured noise floor (D-049), the observed range of test accuracy over n=3 seeds is
+**2.11 points**. For n=3 the expected range is ≈1.693σ, so **σ ≈ 1.25 points**. The minimum
+detectable difference between two arm means at 80% power (k = 2.80) is 2.80 × √2 × σ/√k:
+
+| seeds per arm | SE(mean) | SE(difference) | MDD at 80% power | runtime |
+|---|---|---|---|---|
+| **1** | 1.25 pts | 1.76 pts | **4.9 pts** | ~75 min |
+| 3 | 0.72 pts | 1.02 pts | **2.8 pts** | ~5 h |
+| 5 | 0.56 pts | 0.79 pts | **2.2 pts** | ~8 h |
+| 10 | 0.39 pts | 0.56 pts | 1.6 pts | ~17 h |
+
+Against an expected effect of **2–3 points**, three seeds per arm reaches 2.8 and five reaches
+2.2 — both still at or above the low end of the expected effect. **Five hours buys a
+marginally-less-weak answer, not a strong one.** Ten seeds would get there, at ~17 hours on
+this hardware, which is out of scope.
+
+**What this means for the result.** The primary McNemar test remains worth running: it is a
+paired test on the same 521 images and asks whether these two *fitted models* differ, which is
+answerable. The *architectural* claim requires the effect to exceed the 2.11-point floor
+(D-022). At one seed per arm, that is the standard being applied, and it is unlikely to be met.
+An inconclusive outcome is recorded as inconclusive.
+
+**Who raised it:** User, requiring the seed count be fixed before any arm result exists, and
+supplying the power arithmetic. Claude verified each step independently: σ = 2.11/1.693 = 1.25,
+and the MDD column reproduces exactly.
+
+---
+
+## D-049 — Measured seed-variance floor: 2.11 accuracy points
+**Date:** 2026-09-06 · **Phase:** 2 · **Status:** `settled`
+
+**gap3, seeds 0/1/2, full 40-epoch runs on the corrected cache-space split:**
+
+| seed | test acc | macro-F1 | Scientific F1 |
+|---|---|---|---|
+| 0 | 0.8560 | 0.8435 | 0.648 |
+| 1 | 0.8676 | 0.8544 | 0.629 |
+| 2 | 0.8464 | 0.8312 | 0.600 |
+| **observed range** | **2.11 pts** | **0.0232** | **0.048** |
+
+Reported as a **range**, not a standard deviation — three points do not support an SD (D-021).
+
+**This is the most important number produced by the project.** The same architecture, trained
+on the same data with only the random seed changed, varies by 2.11 accuracy points. The
+expected gap3-vs-gap1_hidden effect is 2–3 points. **The architecture differs from itself by
+about as much as it is expected to differ from the comparison arm.**
+
+Most published reports of a comparison like this state a 2-point win without ever measuring
+what the architecture does against itself. That is the finding here, not a caveat on it.
+
+**Consequence for the Scientific hypothesis (D-044):** Scientific F1 ranges **0.048** across
+seeds of one architecture. Movement below 0.048 across the four arms is seed noise, not spatial
+resolution. That threshold is applied rather than eyeballed.
+
+**Determinism check (diagnostic only, not the floor):** gap3 seed 0 run twice for 3 epochs gave
+**bit-identical** values at every epoch — train loss 1.7377017484129795, val macro-F1
+0.5132755559004305, matching to the last digit. MPS is reproducible for these operations at a
+fixed seed, so the floor above measures *pure seed variance* with no implementation
+non-determinism mixed in.
+
+---
+
+## D-050 — Two anomalies checked before proceeding; both benign
+**Date:** 2026-09-06 · **Phase:** 2 · **Status:** `settled`
+
+**Anomaly 1 — early stopping never fired across three runs**, where the earlier run stopped at
+epoch 26. Verified: `monitor` is still `"max val_macro_f1"`, `early_stop` is 10, the validation
+loop ran all 40 epochs (40 rows, 40 distinct val losses — not a stuck value). The trajectory
+climbs 0.5133 → 0.8460 and **peaks at epoch 35**, leaving only 5 epochs of patience consumed
+against a limit of 10. **Early stopping correctly did not fire** because the model was still
+improving near the end. Not a bug.
+
+**Anomaly 2 — accuracy rose (0.846–0.868) on a split that should be marginally harder** than
+the one giving 0.8484. Verified: split sizes are unchanged at 2438/523/521, all 3,482 images are
+still present (the dedup *regrouped*, it did not drop images), and every class sits within
+14.8–15.1% of its total in the test split, so stratification holds.
+
+**Explanation: only 111 of 521 test images (21%) are shared between the old and new splits.**
+410 images moved out and 410 moved in. These are substantially different test sets, so the
+scores are **not directly comparable** and the difference needs no further explanation.
+Recorded as benign; not theorised past what the check shows.
+
+**Who raised it:** User, requiring both be checked before spending another 75 minutes of
+compute.
+
+---
+
 ## D-047 — Model confidence is well calibrated; 99.99% on a single image is not anomalous
 **Date:** 2026-09-06 · **Phase:** 1.6 · **Status:** `settled`
 

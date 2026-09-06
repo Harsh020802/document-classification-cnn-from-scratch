@@ -1,0 +1,13 @@
+{
+  "space": "cache_256",
+  "threshold": 3,
+  "n_clusters": 42,
+  "n_in_cluster": 206,
+  "n_cross_label": 2,
+  "test_near_train": 0,
+  "sizes": {
+    "train": 2438,
+    "val": 523,
+    "test": 521
+  }
+}

@@ -365,6 +365,125 @@ non-determinism mixed in.
 
 ---
 
+## D-053 — gap7 loses to gap3: more spatial resolution is not monotonically better
+**Date:** 2026-09-06 · **Phase:** 2 · **Status:** `settled`
+
+**Measured:** gap3 (3×3 grid, 23,050 head params) scores **0.8560**; gap7 (7×7 grid, 125,450
+head params) scores **0.8253**. A **3.07-point drop** for 5.4× the head parameters and 5.4× the
+spatial cells. McNemar C–D: b=27, c=11, p=0.0139, significant under Holm at the 0.0500 rung.
+
+The drop is 1.5× the 2.11-point seed floor, so it is unlikely to be seed noise, though it is
+the smallest margin in the set and closest to the floor.
+
+**Why this matters on its own.** The intuition behind the whole ablation was "spatial position
+carries signal", and the naive extension of that is "more spatial resolution is better". It is
+not. Going 1×1 → 3×3 gains 9.78 points; going 3×3 → 7×7 loses 3.07.
+
+**Plausible reading, not verified:** 49 cells over-fragment a 14×14 feature map — each cell
+averages a 2×2 patch, which is small enough that a document's layout elements straddle cell
+boundaries inconsistently across images. 9 cells at roughly 75×75 input pixels each capture
+top/middle/bottom × left/centre/right, which matches how documents are actually organised.
+Testing that would need intermediate grids (4×4, 5×5), which is not in scope.
+
+**Who raised it:** User, requiring this not be buried under the primary comparison.
+
+---
+
+## D-052 — D-044 REFUTED: Scientific is not beyond the reach of vision
+**Date:** 2026-09-06 · **Phase:** 2 · **Status:** `reversed` — supersedes the hypothesis in **D-044**
+
+**D-044 hypothesised** that the Scientific class (F1 0.576) was limited by *modality*: the class
+is defined by subject matter rather than page geometry, so a CNN reading layout would have no
+mechanism to represent it, and its F1 would stay flat at ~0.58 across all four arms regardless
+of spatial resolution.
+
+**Measured, and it does not hold:**
+
+| arm | A gap1 (no spatial) | B gap1_hidden (no spatial) | C gap3 (3×3) | D gap7 (7×7) | range |
+|---|---|---|---|---|---|
+| Scientific F1 | 0.485 | 0.458 | **0.648** | 0.545 | **0.190** |
+
+The pre-registered threshold was the seed-variance floor for this class, **0.048** (D-049).
+The observed range is **0.190 — 4× the threshold.** Scientific F1 moves substantially with
+spatial resolution: adding a 3×3 grid lifts it from 0.485 to 0.648, a 16-point gain.
+
+**The hypothesis was wrong. Layout carries real signal for this class.**
+
+**What survives, and what the Week 3 OCR case now rests on.** Scientific is still the worst
+class by a wide margin — 0.648 against 0.85+ for Email, ADVE, Memo and Letter — and the best
+available spatial configuration does not close that gap. The honest framing is **"vision helps
+but plateaus well below the other classes"**, not "vision cannot help". The OCR argument stands
+on the residual gap, not on an impossibility claim. **Drop "unreachable by vision" entirely.**
+
+**Also notable:** nearly every class moves more than the 0.048 threshold across arms — Memo
+0.427, Letter 0.301, Resume 0.278, Report 0.255. Spatial position matters broadly, not
+specifically for Scientific. Scientific is simply the hardest class, not a categorically
+different one.
+
+**Who raised it:** the ablation, run precisely to test this. Recorded as a reversal rather than
+edited away — the original claim in D-044 stays exactly as written.
+
+---
+
+## D-051 — Arm B did not converge: the primary comparison is an upper bound
+**Date:** 2026-09-06 · **Phase:** 2 · **Status:** `settled`
+
+**Trigger:** the primary comparison returned **+17.85 points**, roughly 6× the pre-registered
+2–3 point expectation, and arm B (gap1_hidden) scored **8 points below** arm A (gap1) — adding a
+hidden layer over the same 256-vector should cost little or nothing. Three diagnostics were run
+before anything was written up.
+
+**Check 1 — did B train? It trained, but UNDERFIT. My overfitting explanation is refuted.**
+
+| arm | train loss start → end | train F1 | val F1 | train−val acc gap | best epoch |
+|---|---|---|---|---|---|
+| A gap1 | 1.978 → 0.650 | 0.774 | 0.788 | **−0.011** | 37 |
+| **B gap1_hidden** | 2.195 → **0.869** | **0.661** | 0.688 | **−0.022** | **40 (the last)** |
+| C gap3 | 1.738 → **0.319** | 0.901 | 0.833 | **+0.062** | 35 |
+
+**B's validation score is higher than its training score.** A model that has memorised its
+training set cannot do that. This is underfitting, the opposite of the explanation I offered
+when first reporting the result. B's final train loss is 2.7× C's, it climbed monotonically
+from 0.166 to 0.688, and **its best epoch was the last one** — it was still improving when the
+budget ran out. A and C both peaked before the end; only B never plateaued.
+
+It did not stall at ln(10)=2.3026, so it was learning — just too slowly to converge in 40
+epochs.
+
+**Check 2 — the head is alive, but a third of it is dead.** `Linear(256→86)` weights are normal
+(|w| mean 0.026, max 0.163), post-ReLU activations have mean +1.58 and std 2.86, so signal
+flows. But **61% of activations are zero and 35 of 86 units are dead for every test image** —
+51 effective units, not 86. Not a collapse; a degraded head, consistent with the slow
+convergence.
+
+**Check 3 — the configs are identical.** Diffing the effective runtime configs across all four
+arms found **exactly one differing key: `model.head.type`.** Same lr 3e-4, weight decay 1e-4,
+40 epochs, batch 32, dropout 0.5, seed 0, identical normalisation constants. All four ran the
+full 40 epochs; none early-stopped. The experiment is mechanically clean.
+
+**Decision on how to report it.** The pre-registered primary (C vs gap1_hidden) is reported as
+registered — **b=112, c=19, 131 discordant, +17.85 points, McNemar exact p = 3.1e-17** — with
+the caveat stated in the same breath: **B did not converge, so 17.85 points is an upper bound
+on the architectural effect, not an estimate of it.** Under a longer budget the gap would
+likely narrow. The pre-registration is left intact rather than rewritten (D-048).
+
+**The writeup leads with A vs C instead**, which needs no such caveat: both arms converged
+(best epochs 37 and 35), identical configs, and the only difference is 1×1 versus 3×3 pooling.
+**+9.78 points, 4.6× the seed floor.**
+
+**Limitation this creates, stated plainly.** A and C are *not* capacity-matched — 2,570 versus
+23,050 head parameters — so A-vs-C alone cannot separate spatial information from head
+capacity. Isolating that was arm B's entire purpose, and B's non-convergence weakens it. What
+still holds: **B has 9× A's head capacity and scores 8 points worse**, so capacity alone plainly
+does not drive the gain. But the clean isolation the design intended is not available from
+these runs.
+
+**Who raised it:** User, refusing to accept a 6×-over-prediction result without ruling out
+mechanical causes first — the same discipline that caught the leakage bug and the hashing
+proxy, applied here where the surprise was in our favour.
+
+---
+
 ## D-050 — Two anomalies checked before proceeding; both benign
 **Date:** 2026-09-06 · **Phase:** 2 · **Status:** `settled`
 
@@ -467,7 +586,7 @@ a larger sample.
 ---
 
 ## D-044 — "Scientific" is topic-defined, not layout-defined: a vision-only ceiling
-**Date:** 2026-09-06 · **Phase:** 1.5 · **Status:** `settled`
+**Date:** 2026-09-06 · **Phase:** 1.5 · **Status:** `reversed` — **REFUTED by measurement, see D-052.** The hypothesis below is left exactly as written; the ablation moved Scientific F1 from 0.485 to 0.648 with spatial resolution, a 0.190 range against a 0.048 noise threshold.
 
 **Observation:** Scientific has by far the worst per-class F1 (**0.576**, recall **0.487** — the
 model finds fewer than half of them) and accounts for **6 of the 12 most-confident errors**.

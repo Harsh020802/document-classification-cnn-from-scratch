@@ -305,6 +305,26 @@ judgment call for the user, not an automatic gate.
 
 ---
 
+## 5b. Baselines recomputed on the CORRECTED cache-space split
+
+The cache-space dedup (D-043 fix) changed the split: 42 clusters / 206 images (5.9%) vs 31/116
+in original space, and **0 test images within Hamming ≤3 of a train image** (was 13). Sizes are
+unchanged at 2438/523/521, and **only 111 of 521 test images (21%) are shared with the old
+split** — 410 moved out, 410 moved in. Scores across the two splits are therefore **not
+directly comparable**.
+
+| model | old split (orig-space) | **new split (cache-space)** |
+|---|---|---|
+| majority class | 17.85% | **17.85%** |
+| logreg 8×8 | 58.73% (C=0.1) | **61.61%** (C=1.0) |
+| logreg 32×32 | 61.61% (C=0.1) | **64.30%** (C=0.01) |
+| 32×32 over 8×8 | +2.88 pts | **+2.69 pts** |
+
+The 84.84% CNN figure was measured on the **old** split and stays labelled as such. The
+ablation arms are all on the new split.
+
+---
+
 ## 6. Baselines — the interpretability floor
 
 All with `StandardScaler` (train-fit), `C` tuned on validation, `class_weight='balanced'`.
@@ -344,7 +364,96 @@ shows it learned structure.
 | C | `gap3` | 3×3 | 23,050 | — | — | — |
 | D | `gap7` | 7×7 | 125,450 | — | — | — |
 
-### 7a. Primary comparison (pre-registered, unadjusted α=0.05)
+### 7-ABL. FOUR-ARM ABLATION — MEASURED 2026-09-06
+
+Seed 0, sealed test split (n=521), **corrected cache-space split**. Only `model.head.type`
+differs across arms — verified by diffing the effective runtime configs (exactly one key).
+
+| arm | head | spatial | head params | test acc | macro-F1 |
+|---|---|---|---|---|---|
+| A | `gap1` | none | 2,570 | 0.7582 | 0.7529 |
+| B | `gap1_hidden(86)` | none | 22,972 | **0.6775** | 0.7001 |
+| C | `gap3` | **3×3** | 23,050 | **0.8560** | **0.8435** |
+| D | `gap7` | 7×7 | 125,450 | 0.8253 | 0.8188 |
+
+**Seed-variance floor: 2.11 accuracy points** (D-049). Every difference below is read against it.
+
+### The headline comparison — A vs C (clean, both converged)
+
+**+9.78 accuracy points from adding a 3×3 pooling grid — 4.6× the seed floor.**
+McNemar A–C: b=16, c=67, p=1.4e-08. Both arms converged (best epochs 37 and 35), identical
+configs. This is the result the writeup leads with because it needs no caveat.
+
+Caveat that does apply: A and C are **not** capacity-matched (2,570 vs 23,050 head params), so
+A-vs-C alone cannot separate spatial information from head capacity. Isolating that was arm B's
+job — see below.
+
+### The pre-registered primary — C vs B, reported as registered
+
+| quantity | value |
+|---|---|
+| head params | 23,050 vs 22,972 — **0.34% apart** |
+| b (C right, B wrong) | **112** |
+| c (B right, C wrong) | **19** |
+| discordant pairs | 131 |
+| observed difference | **+17.85 accuracy points** |
+| detectable at 80% power (k=2.80) | 6.15 pts |
+| McNemar exact p | **3.108e-17** — reject H₀ |
+| vs 2.11-pt seed floor | **8.5× the floor** |
+
+**Caveat, stated in the same breath: arm B did not converge** (D-051). Its best epoch was 40 —
+the last one — its train−val accuracy gap is **−0.022** (validation *better* than training,
+i.e. underfitting), and its final train loss is 2.7× arm C's. **17.85 points is therefore an
+upper bound on the architectural effect, not an estimate of it.** Under a longer budget the gap
+would narrow.
+
+The pre-registration is left intact rather than rewritten (D-048).
+
+### Secondary comparisons (exploratory, Holm-corrected) — all five significant
+
+| pair | b | c | p | Holm threshold | significant |
+|---|---|---|---|---|---|
+| B–D | 26 | 103 | 4.9e-12 | 0.0100 | yes |
+| A–C | 16 | 67 | 1.4e-08 | 0.0125 | yes |
+| A–B | 71 | 29 | 3.2e-05 | 0.0167 | yes |
+| A–D | 28 | 63 | 3.1e-04 | 0.0250 | yes |
+| C–D | 27 | 11 | 1.4e-02 | 0.0500 | yes |
+
+### gap7 loses to gap3 — more resolution is not monotonically better
+
+**gap3 0.8560 vs gap7 0.8253: a 3.07-point drop** for 5.4× the head parameters and 5.4× the
+spatial cells (C–D: b=27, c=11, p=0.0139). 1.5× the seed floor — the smallest margin in the set
+and the closest to it, but a real reversal of the naive "more spatial resolution is better"
+reading. See D-053.
+
+### Per-class F1 by arm — the Scientific test
+
+| class | A (none) | B (none) | C (3×3) | D (7×7) | range |
+|---|---|---|---|---|---|
+| ADVE | 0.971 | 0.943 | 0.971 | 0.985 | 0.042 |
+| Email | 0.899 | 0.919 | 0.944 | 0.927 | 0.045 |
+| News | 0.929 | 0.964 | 0.929 | 0.893 | 0.071 |
+| Form | 0.816 | 0.773 | 0.870 | 0.849 | 0.098 |
+| Note | 0.618 | 0.793 | 0.712 | 0.706 | 0.175 |
+| **Scientific** | **0.485** | **0.458** | **0.648** | **0.545** | **0.190** |
+| Report | 0.609 | 0.482 | 0.737 | 0.673 | 0.255 |
+| Resume | 0.791 | 0.667 | 0.895 | 0.944 | 0.278 |
+| Letter | 0.686 | 0.538 | 0.840 | 0.827 | 0.301 |
+| Memo | 0.726 | 0.465 | 0.891 | 0.838 | 0.427 |
+
+**Scientific range 0.190 against its 0.048 per-class seed floor — 4× above it. D-044 is
+REFUTED** (D-052): Scientific F1 moves substantially with spatial resolution, so it is not a
+modality ceiling. Vision demonstrably helps; it just plateaus at 0.648 while other classes
+reach 0.85+.
+
+Nearly every class exceeds the 0.048 threshold, so spatial position matters broadly rather than
+specifically for Scientific.
+
+Figure: `fig6_ablation.png`
+
+---
+
+## 7a. Primary comparison (pre-registered, unadjusted α=0.05)
 
 **C vs B** — matched capacity, spatial info the only difference.
 

@@ -243,3 +243,62 @@ def baseline_comparison(baselines_json: Path, clean_json: Path, out: Path,
 
     fig.tight_layout()
     return _save(fig, out)
+
+
+# --------------------------------------------------------------------------- 6
+def ablation(results_json: Path, floor_json: Path, out: Path) -> Path:
+    """Four-arm ablation: accuracy per arm against the seed floor, and per-class F1.
+
+    The seed floor is drawn as a band around arm C, because a difference smaller than
+    the floor is not distinguishable from having drawn a different seed.
+    """
+    r = json.loads(results_json.read_text())
+    fl = json.loads(floor_json.read_text())
+    arms = ["A", "B", "C", "D"]
+    label = {"A": "gap1\n1×1", "B": "gap1_hidden(86)\n1×1", "C": "gap3\n3×3", "D": "gap7\n7×7"}
+    acc = [r["arms"][a]["test_acc"] for a in arms]
+    floor = fl["range_acc"]
+
+    fig, (ax, bx) = plt.subplots(1, 2, figsize=(W * 1.45, W * 0.62),
+                                 gridspec_kw={"width_ratios": [1, 1.25]})
+
+    cols = [MUTED, MUTED, BLUE, MUTED]
+    ax.bar(range(4), acc, 0.6, color=cols)
+    ci = arms.index("C")
+    ax.axhspan(acc[ci] - floor, acc[ci] + floor, color=ACCENT, alpha=0.12, zorder=0)
+    ax.axhline(acc[ci], color=ACCENT, lw=0.9, ls="--", alpha=0.7)
+    ax.text(3.45, acc[ci] + floor + 0.004,
+            f"±{floor*100:.2f} pt seed floor", ha="right", fontsize=6.5, color=ACCENT)
+    for i, v in enumerate(acc):
+        ax.text(i, v + 0.008, f"{v:.3f}", ha="center", fontsize=7.5, color=INK)
+    ax.set_xticks(range(4), [label[a] for a in arms], fontsize=7)
+    ax.set_ylim(0.6, 0.92)
+    ax.set_ylabel("test accuracy")
+    ax.grid(axis="y", alpha=0.5)
+    ax.set_title("Four arms, seed 0 — shaded band is the measured\nseed-variance floor "
+                 "around gap3", fontsize=8.5, pad=6)
+
+    classes = list(r["arms"]["A"]["per_class"].keys())
+    order = sorted(classes, key=lambda c: r["arms"]["C"]["per_class"][c]["f1"])
+    y = np.arange(len(order))
+    for a, colour, mk in (("A", MUTED, "o"), ("B", "#c9c9c9", "s"),
+                          ("C", BLUE, "D"), ("D", ACCENT, "^")):
+        bx.scatter([r["arms"][a]["per_class"][c]["f1"] for c in order], y,
+                   s=26, color=colour, marker=mk, label=label[a].replace("\n", " "),
+                   zorder=3)
+    for i, c in enumerate(order):
+        v = [r["arms"][a]["per_class"][c]["f1"] for a in arms]
+        bx.plot([min(v), max(v)], [i, i], color="#dddddd", lw=1.4, zorder=1)
+    bx.set_yticks(y, order, fontsize=7.5)
+    bx.set_xlabel("per-class F1")
+    bx.set_xlim(0.3, 1.02)
+    bx.grid(axis="x", alpha=0.5)
+    # Legend outside the axes: the lower-right rows (Note, Scientific) are occupied.
+    bx.legend(fontsize=6.6, loc="upper center", bbox_to_anchor=(0.5, -0.16), ncol=4)
+    sci_floor = fl.get("range_sci", 0.048)   # per-class Scientific seed range, NOT macro-F1
+    bx.set_title(f"Per-class F1 by arm — Scientific moves {r['scientific_range']:.3f}, "
+                 f"{r['scientific_range']/sci_floor:.1f}× its {sci_floor:.3f} "
+                 f"per-class noise floor", fontsize=8.5, pad=6)
+
+    fig.tight_layout()
+    return _save(fig, out)

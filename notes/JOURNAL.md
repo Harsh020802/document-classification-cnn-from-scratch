@@ -579,3 +579,53 @@ Regeneration from a clean clone is ~25 minutes.
 actually tracked and the .gitignore is currently hypothetical. Worth doing before any further
 work, since the pre-registration in configs/ablation.yaml depends on a git timestamp to be
 auditable as predating the data.
+
+---
+
+## 2026-09-06 — the four-arm ablation
+
+Ran the pre-registered experiment. Three launch attempts failed first: backgrounding with `&`
+inside a tool call kills the child when the call returns, and my second fix used `setsid`, which
+is Linux-only and does not exist on macOS. Third attempt with `nohup` + `disown` worked.
+
+**Determinism check:** gap3 seed 0 twice for 3 epochs -> **bit-identical** at every epoch. MPS
+is reproducible for these ops at fixed seed, so the noise floor measures pure seed variance.
+
+**Noise floor (D-049): 2.11 accuracy points** across gap3 seeds 0/1/2. That is the most
+important number of the project. The expected effect was 2-3 points; the architecture differs
+from *itself* by 2.11 across seeds.
+
+**Pre-committed one seed per arm (D-048) before any arm ran**, committed to git blind. Verified
+the user's power arithmetic independently: sigma = 2.11/1.693 = 1.25, giving MDD of 4.9/2.8/2.2
+points at 1/3/5 seeds. Five hours of extra compute buys a marginally-less-weak answer.
+
+**Results: the effect is an order of magnitude larger than predicted.** gap3 0.856 vs gap1 0.758
+vs gap1_hidden 0.678 vs gap7 0.825.
+
+**And I nearly wrote up a wrong explanation.** I reported arm B's 8-point deficit as
+overfitting. The user refused to accept a 6x-over-prediction result without ruling out
+mechanical causes, and the diagnostics refuted me:
+
+- **B's train-val gap is -0.022** — validation BETTER than training. A memorising model cannot
+  do that. It is UNDERFITTING, the opposite of what I said.
+- B's best epoch was **40, the last one**; it was still improving when the budget ran out. A and
+  C peaked at 37 and 35.
+- B's final train loss is 2.7x C's.
+- Head is alive (51 of 86 live units) but 35 units are dead for every test image.
+- Configs differ in **exactly one key**: `model.head.type`. The experiment is mechanically clean.
+
+So C-vs-B at +17.85 points is an **upper bound**, not an estimate — it partly measures B's
+incomplete training. Reported as pre-registered with that caveat (user's call), and the writeup
+leads with **A vs C: +9.78 points, 4.6x the floor**, which needs no caveat.
+
+Cost of B not converging: A and C are not capacity-matched, so the clean spatial-vs-capacity
+isolation the design intended is not available. What survives is that B has 9x A's head capacity
+and scores 8 points worse.
+
+**D-044 is REFUTED (D-052).** Scientific F1 moves 0.485 -> 0.648 with spatial resolution, a
+0.190 range against a 0.048 per-class noise floor — 4x above it. My modality hypothesis was
+wrong. Vision helps; it just plateaus at 0.648 while other classes reach 0.85+. The Week 3 OCR
+case now rests on the residual gap, not on an impossibility claim.
+
+**gap7 < gap3 (D-053):** 0.825 vs 0.856, a 3.07-point drop for 5.4x the head parameters. More
+spatial resolution is not monotonically better.

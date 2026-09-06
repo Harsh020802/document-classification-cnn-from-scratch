@@ -18,7 +18,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 
-from src.utils.plots import (baseline_comparison, class_distribution,
+from src.utils.plots import (ablation, baseline_comparison, class_distribution,
                              confusion_matrix, per_class_bars, training_curves)
 
 RUN = REPO / "outputs" / "runs" / "0906_002054_gap3_seed0_first"
@@ -76,8 +76,14 @@ def main() -> None:
         print(f"    CNN plotted at {c['clean']['acc']:.4f} / "
               f"{c['clean']['macro_f1']:.4f} (leakage-corrected, n={c['n_clean']})")
 
+    ab = REPO / "outputs" / "ablation_results.json"
+    fl = REPO / "outputs" / "seed_floor.json"
+    if need(ab, "ablation") and need(fl, "ablation"):
+        p = ablation(ab, fl, FIGS / "fig6_ablation.png")
+        made.append(p)
+        print(f"  wrote {p.relative_to(REPO)}")
+
     print(f"\n  {len(made)} figures written to outputs/figures/")
-    print("  NOT built (runs do not exist yet): four-arm ablation comparison")
 
 
 if __name__ == "__main__":

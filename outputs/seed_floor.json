@@ -16,5 +16,7 @@
   ],
   "range_acc": 0.021113243876400456,
   "range_f1": 0.0231921355679503,
-  "report": "range"
+  "report": "range",
+  "range_sci": 0.048,
+  "note": "range_sci is the per-class Scientific F1 range across seeds 0/1/2 (0.600-0.648)."
 }

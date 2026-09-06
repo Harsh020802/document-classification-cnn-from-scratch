@@ -151,13 +151,14 @@ were the same class, so "memorise eight images" collapsed into "always predict c
 constant function reachable by pushing one logit up. It printed PASS in five steps and could not
 have detected misaligned labels, which is one of the specific bugs the check exists to catch.
 
-**The Scientific class may be unreachable by vision alone.** It scores 0.576 F1 with 0.487
-recall, the worst of the ten, and accounts for six of the twelve most-confident errors. Looking
-at the images, the class contains a research letter, a numeric data table, a contract cover
-sheet, a poster, handwritten lab notes and a research proposal — documents that share subject
-matter but no page geometry, while every other class here is layout-defined. This is stated as a
-hypothesis, not a finding: the pending pooling ablation tests it by reporting per-class F1 across
-four arms that span no spatial grid to a 7×7 grid.
+**The Scientific class is the hardest, and a hypothesis about why turned out to be wrong.** It
+scores 0.576 F1 on the first run, the worst of the ten, and accounts for six of the twelve
+most-confident errors. The class contains a research letter, a numeric data table, a contract
+cover sheet, a poster, handwritten lab notes and a research proposal — documents sharing subject
+matter but no page geometry, while every other class here is layout-defined. I hypothesised this
+was a *modality* ceiling that no amount of spatial resolution would move. **The ablation refuted
+it**: Scientific F1 rose from 0.485 to 0.648 across arms, four times the per-class noise floor.
+Layout does carry signal for it. The class simply plateaus well below the others.
 
 ## Testing
 
@@ -173,18 +174,49 @@ path used in training, and the script asserts that the normalisation constants w
 padding excluded. There is no automated test covering inference, and no coverage measurement for
 the repository as a whole.
 
-## What's next
+## The pooling ablation
 
-The pooling ablation is designed, pre-registered in `configs/ablation.yaml`, and instrumented,
-but **has not been run**. It compares four heads on an identical backbone: 1×1 pooling (2,570
-head parameters), 1×1 pooling plus a hidden layer sized to match (22,972), 3×3 pooling (23,050)
-and 7×7 pooling (125,450). The second and third differ by 0.34% in capacity and only in whether
-spatial position survives to the classifier, which is what isolates the variable. The primary
-comparison uses McNemar's exact test on the shared test set at an unadjusted α=0.05, with the
-other five pairs treated as exploratory under Holm correction, and every difference read against
-a seed-variance floor measured separately. With 521 test images the detectable difference is
-about 3.4–4.8 points against an expected effect of 2–3, so an inconclusive result is a live and
-legitimate outcome.
+The experiment the repository was built around: four classification heads on an identical
+backbone, differing only in whether spatial position survives pooling, pre-registered in
+`configs/ablation.yaml` before any run.
+
+![Ablation](outputs/figures/fig6_ablation.png)
+
+| arm | pooling | head params | test accuracy | macro-F1 |
+|---|---|---|---|---|
+| gap1 | 1×1 (no spatial) | 2,570 | 0.7582 | 0.7529 |
+| gap1_hidden(86) | 1×1 (no spatial) | 22,972 | 0.6775 | 0.7001 |
+| **gap3** | **3×3** | 23,050 | **0.8560** | **0.8435** |
+| gap7 | 7×7 | 125,450 | 0.8253 | 0.8188 |
+
+**Adding a 3×3 grid over global average pooling is worth +9.78 accuracy points** (gap1 → gap3,
+McNemar b=16, c=67, p=1.4e-08). Spatial position carries substantial signal for this task.
+
+**The number that makes the rest interpretable is the noise floor.** Before running the arms,
+gap3 was trained three times with only the random seed changed: test accuracy varied by **2.11
+points** (0.8464 / 0.8560 / 0.8676). The 9.78-point effect is 4.6× that floor, so it survives —
+but had the effect arrived at the 2–3 points originally predicted, the honest answer would have
+been that this test set cannot resolve it. Measuring the floor is what makes that distinction
+available.
+
+**More resolution is not monotonically better.** 7×7 pooling scored 3.07 points *below* 3×3 for
+5.4× the head parameters (p=0.0139) — 49 cells appear to over-fragment a 14×14 feature map
+relative to 9.
+
+**Two honest caveats.** The pre-registered primary comparison was gap3 versus the
+capacity-matched gap1_hidden(86) arm, which returned +17.85 points at p=3.1e-17. But that arm
+**did not converge** — its best epoch was its last, and its validation score exceeded its
+training score, which is underfitting. That figure is an upper bound, not an estimate, and its
+non-convergence costs the clean separation between "spatial information" and "head capacity"
+the design was built to provide. What survives: gap1_hidden has 9× gap1's head capacity and
+scores 8 points worse, so capacity alone plainly is not the driver.
+
+Secondly, an earlier hypothesis in these notes — that the Scientific class was beyond the reach
+of a layout-reading model — **was refuted by this experiment.** Its F1 moved from 0.485 to 0.648
+with spatial resolution, four times the per-class noise floor. Vision helps; it simply plateaus
+below the other classes.
+
+## What's next
 
 Planned beyond that: a detection head for logos, signatures, stamps and tables, written from
 scratch before comparing against YOLO; OCR over detected regions; a text branch fused with the

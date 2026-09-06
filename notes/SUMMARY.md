@@ -1,7 +1,7 @@
 # Document Image Classifier — Summary
 
-*Rewritten each phase. Last updated: 2026-09-06, end of weekend build.*
-*Status: pipeline complete, one full training run finished, four-arm ablation pre-registered and pending.*
+*Rewritten each phase. Last updated: 2026-09-06, after the four-arm ablation.*
+*Status: pipeline complete, ablation run and analysed.*
 
 ---
 
@@ -160,25 +160,49 @@ any single architecture choice.
 
 ---
 
-## An open hypothesis, and how it gets tested
+## The ablation, and the number that matters most
 
-**Scientific is the worst class by a wide margin** — F1 0.576, recall 0.487, and 6 of the 12
-most-confident errors. Looking at the images suggests why: the class contains a research
-letter, a numeric data table, a contract cover sheet, a poster, handwritten lab notes and a
-research proposal. They share *subject matter*, nothing else. Every other class in this dataset
-is defined by *layout* — an email has a header block, a memo has To/From/Date/Subject, an
-advert is a poster.
+The pooling ablation ran: four heads on an identical backbone, differing only in whether and how
+much spatial position survives before classification.
 
-**The hypothesis:** a CNN reading page geometry has no mechanism to represent "this document is
-about science," so this is a modality ceiling rather than a capacity or resolution limit.
+| arm | pooling | head params | test accuracy |
+|---|---|---|---|
+| gap1 | 1×1 (none) | 2,570 | 0.7582 |
+| gap1_hidden(86) | 1×1 (none) | 22,972 | 0.6775 |
+| **gap3** | **3×3** | 23,050 | **0.8560** |
+| gap7 | 7×7 | 125,450 | 0.8253 |
 
-**This is currently an argument, not a measurement.** The pending four-arm ablation settles it
-for free, since the arms already span no spatial grid to a 7×7 grid: if Scientific's F1 stays
-flat across all four, the ceiling is modality and the case for the Week 3 OCR branch is proven
-rather than argued. If it moves with spatial resolution, the claim needs weakening. The
-ablation script reports per-class F1 for every arm specifically to test this.
+**Adding a 3×3 grid over global average pooling is worth +9.78 accuracy points.** Spatial
+position carries substantial signal for document classification — the design intuition held, and
+by a much larger margin than the 2–3 points predicted.
 
----
+**But the number I would put first is the noise floor.** Before running the arms, the same
+architecture was trained three times with only the random seed changed. It varied by **2.11
+accuracy points**. That measurement is what makes every other number here interpretable:
+
+> The noise floor was measured rather than assumed, and it showed the expected effect was not
+> resolvable at this test-set size and seed count. Most reports of this comparison would state a
+> 2-point win without knowing the architecture differs from itself by 2.11 points across seeds.
+
+As it happened the effect came in at 9.78 points — 4.6× the floor — so the conclusion survives.
+Had it come in at 2 points, as predicted, the honest answer would have been "this experiment
+cannot tell you", and the floor is what would have made that visible.
+
+**Two things the ablation got wrong, both recorded.** The capacity-control arm did not converge
+— its best epoch was its last, and its validation score exceeded its training score, which is
+underfitting, not the overfitting I first reported. That makes the pre-registered primary
+comparison an upper bound rather than an estimate, and it costs the clean separation of
+"spatial information" from "head capacity" the design was built to provide. Separately, more
+spatial resolution turned out not to be monotonically better: 7×7 pooling scored 3.07 points
+*below* 3×3, for five times the parameters.
+
+**And a hypothesis I had argued for was refuted.** I had claimed the Scientific class was
+limited by modality — that a network reading page geometry could not represent a category
+defined by subject matter — and predicted its F1 would stay flat across all four arms. It moved
+from 0.485 to 0.648, a range four times the per-class noise floor. Layout carries real signal
+for that class. What survives is narrower and still useful: Scientific plateaus at 0.648 while
+other classes reach 0.85 or better, so the case for adding OCR rests on that residual gap rather
+than on an impossibility claim.
 
 ## What I'd do differently
 
@@ -201,7 +225,12 @@ ablation script reports per-class F1 for every arm specifically to test this.
   interrupted and uninterrupted runs diverge from RNG alone. The tell was that two arms which
   should have differed printed byte-identical numbers.
 - **Design the ablation with its control arm from the start**, rather than discovering the
-  confound after specifying the experiment.
+  confound after specifying the experiment — and give every arm enough epochs to converge. The
+  capacity-control arm was still improving when its budget ran out, which cost the comparison
+  the isolation it was designed to provide.
+- **Measure the noise floor before interpreting any comparison.** Two hours of repeated runs
+  told me the architecture varies by 2.11 points against itself. Without that, a 2-point
+  difference between arms would have looked like a result.
 - **Run the power analysis before choosing the test split size**, not after.
 - **Check backend op support during environment setup.** `AdaptiveAvgPool2d(3)` does not run on
   Apple's MPS backend when the input is not divisible by the output size, which blocked the
@@ -216,9 +245,9 @@ ablation script reports per-class F1 for every arm specifically to test this.
 
 | Week | Work |
 |---|---|
-| 1 | **Done** — classification, from-scratch CNN, baselines, error analysis. Ablation pre-registered, pending compute |
+| 1 | **Done** — classification, from-scratch CNN, baselines, error analysis, and the four-arm pooling ablation with a measured seed-variance floor |
 | 2 | Object detection on documents — logos, signatures, stamps, tables. A detection head written from scratch first, then compared against YOLO |
-| 3 | OCR integration — extract text from detected regions. Directly motivated by the Scientific-class hypothesis above |
+| 3 | OCR integration — extract text from detected regions. Motivated by Scientific plateauing at 0.648 F1 while other classes reach 0.85+, not by any claim that vision cannot help |
 | 4 | A text model over the OCR output, fused with the image signal |
 | 5 | The whole pipeline behind an API with a simple frontend |
 

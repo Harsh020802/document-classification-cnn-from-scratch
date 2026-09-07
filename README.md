@@ -11,6 +11,11 @@ that worked without my being able to explain most of it. The goal here was under
 leaderboard position, so the project is organised around measuring things rather than
 maximising a number.
 
+**[docs/PROJECT.md](docs/PROJECT.md) is the long-form companion to this README** — the full
+pipeline walkthrough, the reasoning behind each design decision, the ablation in detail, and a
+section on the things we got wrong and what disproved them. This page is the summary; that one
+is the whole account.
+
 ## Results
 
 | Model | Test accuracy | Macro-F1 |
@@ -283,3 +288,8 @@ ones that turned out to be wrong — reversals are recorded as new entries that 
 ones rather than by editing history. `JOURNAL.md` is the session-by-session lab notebook,
 `RESULTS.md` holds every measured number with the configuration that produced it, and
 `SUMMARY.md` is the two-page version.
+
+[`docs/PROJECT.md`](docs/PROJECT.md) is the narrative that reads those records and explains
+them: how one image moves through the pipeline, why each choice was made, what the four-arm
+ablation measured, and which hypotheses the measurements refuted. Every statement in it traces
+to a file in this repository.
